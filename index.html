@@ -1,46 +1,175 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="shortcut icon" href="./src/imagens/eccos - Copia.png" type="image/x-icon">
+  <link rel="shortcut icon" href="./src/imagens/eccos - Copia.png" type="image/x-icon" />
+  <link rel="stylesheet" href="./src/css/reset.css" />
+  <link rel="stylesheet" href="./src/css/style.css" />
 
-    <link rel="stylesheet" href="./src/css/reset.css">
-    <link rel="stylesheet" href="/src/css/style.css">
-
-    <title>Calculadora de Estágio</title>
+  <title>Calculadora de Rescisão de Estágio</title>
 </head>
 
 <body>
-    <header>
-        <img class="logo-ghb" src="./src/imagens/logo ghb docs.png" alt="">
-        <img class="logo-eccos" src="./src/imagens/eccos horizontal.png" alt="">
-    </header>
+  <header class="topbar">
+    <div class="topbar__left">
+      <div class="brand-box">
+        <img class="logo logo-ghb" src="./src/imagens/logo ghb docs.png" alt="Logo GHB" />
+      </div>
 
-    <main>
-        <div class="container">
-            <h1>Calculadora de Estágio</h1>
-            <form id="form">
-                <label for="start-date">Data de Início do Estágio:</label>
-                <input type="date" id="start-date" required>
-                <label for="end-date">Data de Fim do Estágio:</label>
-                <input type="date" id="end-date" required>
-                <label for="monthly-allowance">Valor da Bolsa Mensal (R$):</label>
-                <input type="number" id="monthly-allowance" required>
-                <label for="month-start">Data de Início do Último Mês Estagiado:</label>
-                <input type="date" id="month-start" required>
-                <label for="month-end">Data de Fim do Último Mês Estagiado:</label>
-                <input type="date" id="month-end" required>
-                <button type="button" onclick="calculate()">Calcular</button>
-            </form>
-            <div id="results" class="results">
-                <!-- Resultados serão exibidos aqui -->
+      <div class="brand-divider"></div>
+
+      <div class="brand-box">
+        <img class="logo logo-eccos" src="./src/imagens/eccos horizontal.png" alt="Logo Eccos" />
+      </div>
+    </div>
+
+    <div class="topbar__center">
+      <p class="topbar__eyebrow">Ferramenta interna • Recursos Humanos / Estágio</p>
+      <h1>Calculadora d Rescisão de Estágio</h1>
+      <p class="topbar__text">
+        Calcule dias estagiados, férias proporcionais, valor diário da bolsa e pagamento do último mês.
+      </p>
+    </div>
+
+    <div class="topbar__right">
+      <button type="button" id="theme-toggle" class="icon-btn" aria-label="Alternar tema">
+        <span id="theme-toggle-text">🌙 Dark</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="content-grid">
+      <div class="main-panel">
+        <section class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Entrada de dados</p>
+              <h2>Dados do estágio</h2>
             </div>
-        </div>
-        <script src="./src/js/index.js"></script>
-    </main>
+
+            <div class="panel__actions">
+              <button type="button" id="clear-btn" class="btn btn-secondary">Limpar</button>
+            </div>
+          </div>
+
+          <form id="form" class="form">
+            <div class="form-grid">
+              <div class="form-group form-group--full">
+                <label for="intern-name">Nome do estagiário</label>
+                <input
+                  type="text"
+                  id="intern-name"
+                  placeholder="Digite o nome do estagiário"
+                  autocomplete="off"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="start-date">Data de início do estágio</label>
+                <input type="date" id="start-date" required />
+              </div>
+
+              <div class="form-group">
+                <label for="end-date">Data de fim do estágio</label>
+                <input type="date" id="end-date" required />
+              </div>
+
+              <div class="form-group">
+                <label for="monthly-allowance-display">Valor da bolsa mensal</label>
+                <input
+                  type="text"
+                  id="monthly-allowance-display"
+                  inputmode="numeric"
+                  placeholder="R$ 0,00"
+                  autocomplete="off"
+                  required
+                />
+                <input type="hidden" id="monthly-allowance" />
+              </div>
+
+              <div class="form-group">
+                <label for="month-start">Início do último mês estagiado</label>
+                <input type="date" id="month-start" required />
+              </div>
+
+              <div class="form-group">
+                <label for="month-end">Fim do último mês estagiado</label>
+                <input type="date" id="month-end" required />
+              </div>
+            </div>
+
+            <div id="message" class="message" aria-live="polite"></div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Calcular valores</button>
+              <button type="button" id="copy-btn" class="btn btn-secondary">Copiar resultado</button>
+              <button type="button" id="pdf-btn" class="btn btn-secondary">Exportar PDF</button>
+            </div>
+          </form>
+        </section>
+
+        <section id="results" class="panel hidden">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Saída</p>
+              <h2>Resultados do cálculo</h2>
+            </div>
+          </div>
+
+          <div class="results-grid">
+            <article class="metric-card animated-card">
+              <span class="metric-card__label">Total de dias estagiados</span>
+              <strong id="total-days">0</strong>
+            </article>
+
+            <article class="metric-card animated-card">
+              <span class="metric-card__label">Dias de férias proporcionais</span>
+              <strong id="vacation-days">0</strong>
+            </article>
+
+            <article class="metric-card animated-card">
+              <span class="metric-card__label">Valor da bolsa por dia</span>
+              <strong id="daily-allowance">R$ 0,00</strong>
+            </article>
+
+            <article class="metric-card animated-card">
+              <span class="metric-card__label">Valor estimado de férias</span>
+              <strong id="vacation-amount">R$ 0,00</strong>
+            </article>
+
+            <article class="metric-card metric-card--highlight animated-card">
+              <span class="metric-card__label">Pagamento do último mês</span>
+              <strong id="last-month-payment">R$ 0,00</strong>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <aside class="side-panel">
+        <section class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Histórico</p>
+              <h2>Últimos cálculos</h2>
+            </div>
+            <button type="button" id="clear-history-btn" class="btn btn-danger">Apagar</button>
+          </div>
+
+          <div id="history-list" class="history-list">
+            <p class="history-empty">Nenhum cálculo salvo ainda.</p>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="./src/js/index.js"></script>
 </body>
 
 </html>
