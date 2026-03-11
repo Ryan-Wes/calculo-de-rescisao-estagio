@@ -1,60 +1,206 @@
-# Calculadora de Estágio
+# Calculadora de Rescisão de Estágio
 
 ## Descrição
 
-Esta é uma ferramenta simples para calcular informações relacionadas a contratos de estágio. O sistema permite que você insira as datas de início e término do estágio, o valor da bolsa mensal, e retorna as seguintes informações:
+A **Calculadora de Rescisão de Estágio** é uma ferramenta web desenvolvida para auxiliar no cálculo de informações relacionadas ao encerramento de contratos de estágio.
 
-- Total de dias estagiados no contrato inteiro.
-- Quantidade de dias de férias.
-- Valor da bolsa por dia.
-- Valor total das férias.
-- Dias estagiados no último mês.
-- Valor a receber pelos dias trabalhados no último mês.
+O sistema permite calcular automaticamente:
+
+- Total de dias estagiados
+- Dias de férias proporcionais
+- Dias de férias restantes (descontando férias usufruídas)
+- Valor diário do estágio
+- Valor total das férias
+- Pagamento do último mês (quando aplicável)
+
+A ferramenta foi criada para facilitar o trabalho de áreas administrativas e de recursos humanos que precisam realizar esses cálculos com frequência.
+
+O sistema suporta dois tipos de cálculo:
+
+- **Bolsa mensal**
+- **Pagamento por hora**
+
+---
 
 ## Funcionalidades
 
-- **Cálculo de dias de estágio**: Calcula automaticamente a quantidade total de dias entre as datas de início e fim do estágio.
-- **Cálculo de dias de férias**: Calcula os dias de férias proporcionais com base nos dias estagiados.
-- **Cálculo do valor da bolsa por dia**: Com base no valor mensal da bolsa, calcula o valor correspondente a cada dia trabalhado.
-- **Cálculo de férias**: Calcula quanto o estagiário deve receber em relação às férias proporcionais.
-- **Cálculo de dias estagiados no último mês**: Permite inserir as datas do último mês de estágio para calcular os dias estagiados e o valor correspondente.
+### 1. Cálculo por Bolsa Mensal
 
-## Como usar
+**Entradas:**
 
-1. Insira a **data de início do estágio**.
-2. Insira a **data de término do estágio**.
-3. Insira o **valor da bolsa mensal (em R$)**.
-4. Insira a **data de início do último mês** e a **data de fim do último mês** para calcular o valor dos dias trabalhados nesse mês.
-5. Clique no botão **"Calcular"** para visualizar os resultados.
+- Nome do estagiário
+- Data de início do estágio
+- Data final do estágio
+- Valor da bolsa mensal
+- Datas do último mês estagiado
+- Dias de férias usufruídos
 
-Os cálculos serão exibidos automaticamente após a submissão.
+**Retornos:**
+
+- Dias estagiados
+- Dias de direito a férias
+- Dias restantes de férias
+- Valor da bolsa por dia
+- Valor total das férias
+- Pagamento do último mês
+
+---
+
+### 2. Cálculo por Pagamento por Hora
+
+**Entradas:**
+
+- Nome do estagiário
+- Valor da hora
+- Horas trabalhadas por dia
+- Data de início do estágio
+- Data final do estágio
+- Dias de férias usufruídos
+
+**Retornos:**
+
+- Dias estagiados
+- Dias de direito a férias
+- Dias restantes de férias
+- Valor por dia trabalhado
+- Valor total das férias
+
+Nesse modo o sistema calcula **apenas as férias**, pois o valor mensal pode variar devido a faltas ou descontos.
+
+---
+
+## Fórmulas Utilizadas
+
+### Dias de férias proporcionais
+
+```
+dias_estagiados / 365 * 30
+```
+
+### Valor das férias
+
+#### Bolsa mensal
+
+```
+valor_bolsa / 30 * dias_de_ferias_restantes
+```
+
+#### Pagamento por hora
+
+```
+valor_hora * horas_por_dia = valor_por_dia
+
+valor_por_dia * dias_de_ferias_restantes
+```
+
+---
+
+## Funcionalidades Extras
+
+Além dos cálculos principais, o sistema também inclui:
+
+- Histórico dos últimos cálculos
+- Exportação dos resultados em **PDF**
+- Botão para **copiar o resultado**
+- **Modo claro / modo escuro**
+- Interface em estilo **dashboard**
+- Animações nos cards de resultado
+- Máscara automática para valores em reais
+- Armazenamento local do histórico (LocalStorage)
+
+---
 
 ## Tecnologias Utilizadas
 
-- **HTML5**: Estruturação da página.
-- **CSS3**: Estilização da interface e formatação dos resultados.
-- **JavaScript**: Lógica de cálculo dos dias estagiados, dias de férias e valores a receber.
+- **HTML5** — Estrutura da aplicação
+- **CSS3** — Estilização e layout responsivo
+- **JavaScript (Vanilla)** — Lógica de cálculo e interatividade
+- **jsPDF** — Geração de arquivos PDF
+
+---
+
+## Como Usar
+
+1. Insira o **nome do estagiário**.
+2. Escolha o **tipo de cálculo**:
+   - Bolsa mensal
+   - Pagamento por hora
+3. Preencha os campos necessários.
+4. Informe os **dias de férias usufruídos**.
+5. Clique em **Calcular valores**.
+
+O sistema exibirá automaticamente:
+
+- Dias estagiados
+- Dias de férias
+- Valor por dia
+- Valor total das férias
+
+Você também pode:
+
+- Copiar o resultado
+- Exportar o cálculo em PDF
+
+---
 
 ## Instalação
 
-Nenhuma instalação é necessária. Basta clonar o repositório e abrir o arquivo `index.html` em qualquer navegador compatível.
+Nenhuma instalação é necessária.
 
-### Clonando o Repositório
+Basta clonar o repositório e abrir o arquivo `index.html` em qualquer navegador.
+
+### Clonando o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/calculadora-estagio.git
+git clone https://github.com/Ryan-Wes/calculo-de-rescisao.git
+```
 
-## Uso
+Depois abra:
 
-1. Navegue até o diretório onde o projeto foi clonado.
-2. Abra o arquivo `index.html` em seu navegador.
+```
+index.html
+```
+
+---
+
+## Deploy
+
+O projeto está disponível online via GitHub Pages:
+
+[https://ryan-wes.github.io/calculo-de-rescisao/](https://ryan-wes.github.io/calculo-de-rescisao/)
+
+---
 
 ## Contribuição
 
-Se você deseja contribuir com melhorias, siga os passos abaixo:
+Contribuições são bem-vindas.
 
-1. Fork este repositório.
-2. Crie um branch para sua feature: `git checkout -b minha-feature`.
-3. Commit suas alterações: `git commit -m 'Minha nova feature'`.
-4. Faça o push para o branch: `git push origin minha-feature`.
-5. Abra um Pull Request.
+Para contribuir:
+
+1. Faça um fork do projeto
+2. Crie uma branch
+
+```bash
+git checkout -b minha-feature
+```
+
+3. Faça commit das alterações
+
+```bash
+git commit -m "Minha nova feature"
+```
+
+4. Faça push da branch
+
+```bash
+git push origin minha-feature
+```
+
+---
+
+## Autor
+
+**Wesley Ryan Lopes**
+
+- [LinkedIn](https://www.linkedin.com/in/wryan-lopes)
+- [Portfólio](https://ryan-wes.github.io/portfolio/)
