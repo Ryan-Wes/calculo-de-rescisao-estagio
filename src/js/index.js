@@ -9,14 +9,24 @@ const message = document.getElementById("message");
 const resultsSection = document.getElementById("results");
 const historyList = document.getElementById("history-list");
 
+const calculationTypeSelect = document.getElementById("calculation-type");
+
 const monthlyAllowanceDisplay = document.getElementById("monthly-allowance-display");
 const monthlyAllowanceHidden = document.getElementById("monthly-allowance");
 
+const hourlyRateDisplay = document.getElementById("hourly-rate-display");
+const hourlyRateHidden = document.getElementById("hourly-rate");
+
 const totalDaysElement = document.getElementById("total-days");
 const vacationDaysElement = document.getElementById("vacation-days");
-const dailyAllowanceElement = document.getElementById("daily-allowance");
+const remainingVacationDaysElement = document.getElementById("remaining-vacation-days");
+const dailyValueElement = document.getElementById("daily-value");
 const vacationAmountElement = document.getElementById("vacation-amount");
 const lastMonthPaymentElement = document.getElementById("last-month-payment");
+
+const monthlyFields = document.querySelectorAll(".monthly-field");
+const hourlyFields = document.querySelectorAll(".hourly-field");
+const monthlyResultCard = document.querySelector(".monthly-result");
 
 const HISTORY_KEY = "internshipCalculatorHistory";
 const THEME_KEY = "internshipCalculatorTheme";
@@ -41,7 +51,6 @@ function formatCurrency(value) {
 
 function formatDate(dateString) {
   if (!dateString) return "-";
-
   const [year, month, day] = dateString.split("-");
   return `${day}/${month}/${year}`;
 }
@@ -61,23 +70,24 @@ function calculateDaysDifference(startDate, endDate) {
 function resetResults() {
   totalDaysElement.textContent = "0";
   vacationDaysElement.textContent = "0";
-  dailyAllowanceElement.textContent = "R$ 0,00";
+  remainingVacationDaysElement.textContent = "0";
+  dailyValueElement.textContent = "R$ 0,00";
   vacationAmountElement.textContent = "R$ 0,00";
   lastMonthPaymentElement.textContent = "R$ 0,00";
   resultsSection.classList.add("hidden");
   currentResult = null;
 }
 
-function applyCurrencyMask(value) {
+function applyCurrencyMask(value, hiddenInput) {
   const numericValue = value.replace(/\D/g, "");
 
   if (!numericValue) {
-    monthlyAllowanceHidden.value = "";
+    hiddenInput.value = "";
     return "";
   }
 
   const amount = Number(numericValue) / 100;
-  monthlyAllowanceHidden.value = amount.toFixed(2);
+  hiddenInput.value = amount.toFixed(2);
 
   return amount.toLocaleString("pt-BR", {
     style: "currency",
@@ -85,16 +95,23 @@ function applyCurrencyMask(value) {
   });
 }
 
+function updateCalculationTypeUI() {
+  const calculationType = calculationTypeSelect.value;
+  const isMonthly = calculationType === "monthly";
+
+  monthlyFields.forEach((field) => field.classList.toggle("hidden", !isMonthly));
+  hourlyFields.forEach((field) => field.classList.toggle("hidden", isMonthly));
+  monthlyResultCard.classList.toggle("hidden-card", !isMonthly);
+}
+
 function getHistory() {
   const savedHistory = localStorage.getItem(HISTORY_KEY);
 
-  if (!savedHistory) {
-    return [];
-  }
+  if (!savedHistory) return [];
 
   try {
     return JSON.parse(savedHistory);
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -112,8 +129,7 @@ function addToHistory(resultData) {
     ...resultData,
   });
 
-  const limitedHistory = history.slice(0, 10);
-  saveHistory(limitedHistory);
+  saveHistory(history.slice(0, 10));
   renderHistory();
 }
 
@@ -131,15 +147,16 @@ function renderHistory() {
         <article class="history-card">
           <div class="history-card__top">
             <span class="history-card__date">${formatDateTime(new Date(item.createdAt))}</span>
-            <span class="history-card__value">${item.lastMonthPaymentFormatted}</span>
+            <span class="history-card__value">${item.vacationAmountFormatted}</span>
           </div>
 
           <ul>
             <li><strong>Estagiário:</strong> ${item.internName}</li>
-            <li><strong>Período:</strong> ${formatDate(item.startDateValue)} até ${formatDate(item.endDateValue)}</li>
-            <li><strong>Bolsa:</strong> ${item.monthlyAllowanceFormatted}</li>
+            <li><strong>Tipo:</strong> ${item.calculationTypeLabel}</li>
             <li><strong>Dias:</strong> ${item.totalDays}</li>
-            <li><strong>Férias:</strong> ${item.vacationDays} dias (${item.vacationAmountFormatted})</li>
+            <li><strong>Férias:</strong> ${item.vacationDays} dias</li>
+            <li><strong>Usufruídos:</strong> ${item.usedVacationDays}</li>
+            <li><strong>Restantes:</strong> ${item.remainingVacationDays}</li>
           </ul>
         </article>
       `;
@@ -148,20 +165,33 @@ function renderHistory() {
 }
 
 function buildResultText(result) {
-  return [
+  const lines = [
     "Resultado do cálculo de estágio",
     `Nome do estagiário: ${result.internName}`,
+    `Tipo de cálculo: ${result.calculationTypeLabel}`,
     `Data de início do estágio: ${formatDate(result.startDateValue)}`,
     `Data de fim do estágio: ${formatDate(result.endDateValue)}`,
-    `Valor da bolsa mensal: ${result.monthlyAllowanceFormatted}`,
-    `Início do último mês estagiado: ${formatDate(result.monthStartValue)}`,
-    `Fim do último mês estagiado: ${formatDate(result.monthEndValue)}`,
-    `Total de dias estagiados: ${result.totalDays}`,
-    `Dias de férias proporcionais: ${result.vacationDays}`,
-    `Valor da bolsa por dia: ${result.dailyAllowanceFormatted}`,
-    `Valor estimado de férias: ${result.vacationAmountFormatted}`,
-    `Pagamento do último mês: ${result.lastMonthPaymentFormatted}`,
-  ].join("\n");
+    `Dias estagiados: ${result.totalDays}`,
+    `Dias de direito a férias: ${result.vacationDays}`,
+    `Dias de férias usufruídos: ${result.usedVacationDays}`,
+    `Dias restantes de férias: ${result.remainingVacationDays}`,
+    `Valor por dia: ${result.dailyValueFormatted}`,
+    `Valor total das férias: ${result.vacationAmountFormatted}`,
+  ];
+
+  if (result.calculationType === "monthly") {
+    lines.splice(5, 0, `Valor da bolsa mensal: ${result.monthlyAllowanceFormatted}`);
+    lines.push(`Pagamento do último mês: ${result.lastMonthPaymentFormatted}`);
+  }
+
+  if (result.calculationType === "hourly") {
+    lines.splice(5, 0,
+      `Valor da hora: ${result.hourlyRateFormatted}`,
+      `Horas diárias trabalhadas: ${result.dailyHours}`
+    );
+  }
+
+  return lines.join("\n");
 }
 
 function restartCardAnimations() {
@@ -175,92 +205,138 @@ function restartCardAnimations() {
 }
 
 function calculateInternshipData() {
+  const calculationType = getInputValue("calculation-type");
   const internName = getInputValue("intern-name").trim();
   const startDateValue = getInputValue("start-date");
   const endDateValue = getInputValue("end-date");
-  const monthlyAllowanceValue = getInputValue("monthly-allowance");
-  const monthStartValue = getInputValue("month-start");
-  const monthEndValue = getInputValue("month-end");
+  const usedVacationDays = Number(getInputValue("used-vacation-days") || 0);
 
   const startDate = new Date(`${startDateValue}T00:00:00`);
   const endDate = new Date(`${endDateValue}T00:00:00`);
-  const monthStart = new Date(`${monthStartValue}T00:00:00`);
-  const monthEnd = new Date(`${monthEndValue}T00:00:00`);
-  const monthlyAllowance = Number(monthlyAllowanceValue);
 
-  if (
-    !internName ||
-    !startDateValue ||
-    !endDateValue ||
-    !monthStartValue ||
-    !monthEndValue ||
-    !monthlyAllowanceValue
-  ) {
-    showMessage("Preencha todos os campos antes de calcular.", "error");
+  if (!internName || !startDateValue || !endDateValue) {
+    showMessage("Preencha todos os campos obrigatórios antes de calcular.", "error");
     resetResults();
     return;
   }
 
-  if (
-    Number.isNaN(startDate.getTime()) ||
-    Number.isNaN(endDate.getTime()) ||
-    Number.isNaN(monthStart.getTime()) ||
-    Number.isNaN(monthEnd.getTime()) ||
-    Number.isNaN(monthlyAllowance)
-  ) {
-    showMessage("Há campos inválidos. Revise as datas e o valor da bolsa.", "error");
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    showMessage("Há datas inválidas. Revise os campos.", "error");
     resetResults();
     return;
   }
 
   if (startDate > endDate) {
-    showMessage("A data de início do estágio não pode ser maior que a data final.", "error");
+    showMessage("A data de início não pode ser maior que a data final.", "error");
     resetResults();
     return;
   }
 
-  if (monthStart > monthEnd) {
-    showMessage("A data inicial do último mês não pode ser maior que a data final.", "error");
-    resetResults();
-    return;
-  }
-
-  if (monthlyAllowance <= 0) {
-    showMessage("O valor da bolsa precisa ser maior que zero.", "error");
+  if (usedVacationDays < 0) {
+    showMessage("Os dias usufruídos não podem ser negativos.", "error");
     resetResults();
     return;
   }
 
   const totalDays = calculateDaysDifference(startDate, endDate);
-  const vacationDays = Math.round((totalDays * 30) / 365);
-  const dailyAllowance = monthlyAllowance / 30;
-  const vacationAmount = vacationDays * dailyAllowance;
-  const daysInLastMonth = calculateDaysDifference(monthStart, monthEnd);
-  const lastMonthPayment = daysInLastMonth * dailyAllowance;
+  const vacationDays = Math.round((totalDays / 365) * 30);
+  const remainingVacationDays = Math.max(vacationDays - usedVacationDays, 0);
+
+  let dailyValue = 0;
+  let vacationAmount = 0;
+  let lastMonthPayment = 0;
 
   const resultData = {
+    calculationType,
+    calculationTypeLabel: calculationType === "monthly" ? "Bolsa mensal" : "Pagamento por hora",
     internName,
     startDateValue,
     endDateValue,
-    monthStartValue,
-    monthEndValue,
-    monthlyAllowance,
-    monthlyAllowanceFormatted: formatCurrency(monthlyAllowance),
     totalDays,
     vacationDays,
-    dailyAllowance,
-    dailyAllowanceFormatted: formatCurrency(dailyAllowance),
-    vacationAmount,
-    vacationAmountFormatted: formatCurrency(vacationAmount),
-    lastMonthPayment,
-    lastMonthPaymentFormatted: formatCurrency(lastMonthPayment),
+    usedVacationDays,
+    remainingVacationDays,
   };
+
+  if (calculationType === "monthly") {
+    const monthlyAllowance = Number(getInputValue("monthly-allowance"));
+    const monthStartValue = getInputValue("month-start");
+    const monthEndValue = getInputValue("month-end");
+    const monthStart = new Date(`${monthStartValue}T00:00:00`);
+    const monthEnd = new Date(`${monthEndValue}T00:00:00`);
+
+    if (!monthlyAllowance || !monthStartValue || !monthEndValue) {
+      showMessage("Preencha os campos de bolsa mensal e último mês.", "error");
+      resetResults();
+      return;
+    }
+
+    if (Number.isNaN(monthStart.getTime()) || Number.isNaN(monthEnd.getTime())) {
+      showMessage("As datas do último mês estão inválidas.", "error");
+      resetResults();
+      return;
+    }
+
+    if (monthStart > monthEnd) {
+      showMessage("A data inicial do último mês não pode ser maior que a data final.", "error");
+      resetResults();
+      return;
+    }
+
+    dailyValue = monthlyAllowance / 30;
+    vacationAmount = dailyValue * remainingVacationDays;
+    lastMonthPayment = calculateDaysDifference(monthStart, monthEnd) * dailyValue;
+
+    Object.assign(resultData, {
+      monthlyAllowance,
+      monthlyAllowanceFormatted: formatCurrency(monthlyAllowance),
+      monthStartValue,
+      monthEndValue,
+      lastMonthPayment,
+      lastMonthPaymentFormatted: formatCurrency(lastMonthPayment),
+    });
+  }
+
+  if (calculationType === "hourly") {
+    const hourlyRate = Number(getInputValue("hourly-rate"));
+    const dailyHours = Number(getInputValue("daily-hours"));
+
+    if (!hourlyRate || !dailyHours) {
+      showMessage("Preencha valor da hora e horas diárias trabalhadas.", "error");
+      resetResults();
+      return;
+    }
+
+    if (hourlyRate <= 0 || dailyHours <= 0) {
+      showMessage("Valor da hora e horas diárias devem ser maiores que zero.", "error");
+      resetResults();
+      return;
+    }
+
+    dailyValue = hourlyRate * dailyHours;
+    vacationAmount = dailyValue * remainingVacationDays;
+
+    Object.assign(resultData, {
+      hourlyRate,
+      hourlyRateFormatted: formatCurrency(hourlyRate),
+      dailyHours,
+    });
+  }
+
+  resultData.dailyValue = dailyValue;
+  resultData.dailyValueFormatted = formatCurrency(dailyValue);
+  resultData.vacationAmount = vacationAmount;
+  resultData.vacationAmountFormatted = formatCurrency(vacationAmount);
 
   totalDaysElement.textContent = resultData.totalDays;
   vacationDaysElement.textContent = resultData.vacationDays;
-  dailyAllowanceElement.textContent = resultData.dailyAllowanceFormatted;
+  remainingVacationDaysElement.textContent = resultData.remainingVacationDays;
+  dailyValueElement.textContent = resultData.dailyValueFormatted;
   vacationAmountElement.textContent = resultData.vacationAmountFormatted;
-  lastMonthPaymentElement.textContent = resultData.lastMonthPaymentFormatted;
+  lastMonthPaymentElement.textContent =
+    resultData.calculationType === "monthly"
+      ? resultData.lastMonthPaymentFormatted
+      : "Não se aplica";
 
   currentResult = resultData;
   resultsSection.classList.remove("hidden");
@@ -278,7 +354,7 @@ async function copyResult() {
   try {
     await navigator.clipboard.writeText(buildResultText(currentResult));
     showMessage("Resultado copiado para a área de transferência.", "success");
-  } catch (error) {
+  } catch {
     showMessage("Não foi possível copiar o resultado.", "error");
   }
 }
@@ -292,26 +368,13 @@ function exportPdf() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  const lines = [
-    `Nome do estagiário: ${currentResult.internName}`,
-    `Data de início do estágio: ${formatDate(currentResult.startDateValue)}`,
-    `Data de fim do estágio: ${formatDate(currentResult.endDateValue)}`,
-    `Valor da bolsa mensal: ${currentResult.monthlyAllowanceFormatted}`,
-    `Início do último mês estagiado: ${formatDate(currentResult.monthStartValue)}`,
-    `Fim do último mês estagiado: ${formatDate(currentResult.monthEndValue)}`,
-    `Total de dias estagiados: ${currentResult.totalDays}`,
-    `Dias de férias proporcionais: ${currentResult.vacationDays}`,
-    `Valor da bolsa por dia: ${currentResult.dailyAllowanceFormatted}`,
-    `Valor estimado de férias: ${currentResult.vacationAmountFormatted}`,
-    `Pagamento do último mês: ${currentResult.lastMonthPaymentFormatted}`,
-    `Gerado em: ${formatDateTime(new Date())}`,
-  ];
+  const lines = buildResultText(currentResult).split("\n");
 
   let y = 20;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text("Calculadora de Estágio", 14, y);
+  doc.text("Calculadora de Rescisão de Estágio", 14, y);
 
   y += 12;
   doc.setFont("helvetica", "normal");
@@ -342,8 +405,7 @@ function setTheme(theme) {
 
 function toggleTheme() {
   const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
-  const nextTheme = currentTheme === "light" ? "dark" : "light";
-  setTheme(nextTheme);
+  setTheme(currentTheme === "light" ? "dark" : "light");
 }
 
 function loadTheme() {
@@ -366,20 +428,29 @@ clearBtn.addEventListener("click", function () {
   form.reset();
   monthlyAllowanceDisplay.value = "";
   monthlyAllowanceHidden.value = "";
+  hourlyRateDisplay.value = "";
+  hourlyRateHidden.value = "";
+  document.getElementById("used-vacation-days").value = 0;
   showMessage("");
   resetResults();
+  updateCalculationTypeUI();
 });
 
 copyBtn.addEventListener("click", copyResult);
 pdfBtn.addEventListener("click", exportPdf);
 clearHistoryBtn.addEventListener("click", clearHistory);
 themeToggleBtn.addEventListener("click", toggleTheme);
+calculationTypeSelect.addEventListener("change", updateCalculationTypeUI);
 
 monthlyAllowanceDisplay.addEventListener("input", function (event) {
-  const formattedValue = applyCurrencyMask(event.target.value);
-  event.target.value = formattedValue;
+  event.target.value = applyCurrencyMask(event.target.value, monthlyAllowanceHidden);
+});
+
+hourlyRateDisplay.addEventListener("input", function (event) {
+  event.target.value = applyCurrencyMask(event.target.value, hourlyRateHidden);
 });
 
 loadTheme();
 renderHistory();
 resetResults();
+updateCalculationTypeUI();
