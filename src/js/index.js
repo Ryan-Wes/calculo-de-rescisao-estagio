@@ -26,7 +26,6 @@ const lastMonthPaymentElement = document.getElementById("last-month-payment");
 
 const monthlyFields = document.querySelectorAll(".monthly-field");
 const hourlyFields = document.querySelectorAll(".hourly-field");
-const monthlyResultCard = document.querySelector(".monthly-result");
 
 const HISTORY_KEY = "internshipCalculatorHistory";
 const THEME_KEY = "internshipCalculatorTheme";
@@ -101,7 +100,6 @@ function updateCalculationTypeUI() {
 
   monthlyFields.forEach((field) => field.classList.toggle("hidden", !isMonthly));
   hourlyFields.forEach((field) => field.classList.toggle("hidden", isMonthly));
-  monthlyResultCard.classList.toggle("hidden-card", !isMonthly);
 }
 
 function getHistory() {
@@ -144,18 +142,20 @@ function renderHistory() {
   historyList.innerHTML = history
     .map((item) => {
       const typeIcon = item.calculationType === "monthly" ? "📋" : "⏱️";
+      const showLastMonth = item.lastMonthPaymentFormatted;
       return `
         <article class="history-card">
           <div class="history-card__top">
             <span class="history-card__name">${typeIcon} ${item.internName}</span>
-            <span class="history-card__value">${item.vacationAmountFormatted}</span>
+            <span class="history-card__value">${item.totalRescissionFormatted || item.vacationAmountFormatted}</span>
           </div>
           <span class="history-card__date">${formatDateTime(new Date(item.createdAt))}</span>
           <ul>
             <li><strong>Tipo:</strong> ${item.calculationTypeLabel}</li>
             <li><strong>Dias:</strong> ${item.totalDays} estagiados</li>
-            <li><strong>Férias:</strong> ${item.vacationDays} dias de direito</li>
-            <li><strong>Restantes:</strong> ${item.remainingVacationDays} dias</li>
+            <li><strong>Restantes:</strong> ${item.remainingVacationDays} dias de férias</li>
+            <li><strong>Férias:</strong> ${item.vacationAmountFormatted}</li>
+            ${showLastMonth ? `<li><strong>Último mês:</strong> ${item.lastMonthPaymentFormatted}</li>` : ""}
           </ul>
         </article>
       `;
@@ -313,12 +313,19 @@ function calculateInternshipData() {
     }
 
     dailyValue = hourlyRate * dailyHours;
-    vacationAmount = dailyValue * vacationDays;
+    vacationAmount = dailyValue * remainingVacationDays;
+
+    // Dias estagiados no último mês = dia do mês da data final
+    const lastMonthDays = endDate.getDate();
+    lastMonthPayment = dailyValue * lastMonthDays;
 
     Object.assign(resultData, {
       hourlyRate,
       hourlyRateFormatted: formatCurrency(hourlyRate),
       dailyHours,
+      lastMonthDays,
+      lastMonthPayment,
+      lastMonthPaymentFormatted: formatCurrency(lastMonthPayment),
     });
   }
 
@@ -327,15 +334,19 @@ function calculateInternshipData() {
   resultData.vacationAmount = vacationAmount;
   resultData.vacationAmountFormatted = formatCurrency(vacationAmount);
 
+  const totalRescission = vacationAmount + (resultData.lastMonthPayment || 0);
+  resultData.totalRescission = totalRescission;
+  resultData.totalRescissionFormatted = formatCurrency(totalRescission);
+
   totalDaysElement.textContent = resultData.totalDays;
   vacationDaysElement.textContent = resultData.vacationDays;
   remainingVacationDaysElement.textContent = resultData.remainingVacationDays;
   dailyValueElement.textContent = resultData.dailyValueFormatted;
   vacationAmountElement.textContent = resultData.vacationAmountFormatted;
-  lastMonthPaymentElement.textContent =
-    resultData.calculationType === "monthly"
-      ? resultData.lastMonthPaymentFormatted
-      : "Não se aplica";
+  lastMonthPaymentElement.textContent = resultData.lastMonthPaymentFormatted || "Não se aplica";
+
+  const totalEl = document.getElementById("total-rescission");
+  if (totalEl) totalEl.textContent = resultData.totalRescissionFormatted;
 
   currentResult = resultData;
   resultsSection.classList.remove("hidden");
